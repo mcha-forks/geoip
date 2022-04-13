@@ -47,6 +47,7 @@
         "wantedList": [
           "cn",
           "private",
+          "game",
           "cloudflare",
           "cloudfront",
           "fastly",
