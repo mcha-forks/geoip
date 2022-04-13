@@ -1,4 +1,4 @@
-name: Build geoip.dat
+name: Build Country.mmdb
 on:
   workflow_dispatch:
   schedule:
@@ -54,7 +54,7 @@ jobs:
           rm -f GeoLite2-Country-CSV.zip
           mv GeoLite2* geolite2
 
-      - name: Build geoip.dat file
+      - name: Build Country.mmdb file
         run: |
           go run ./
 
@@ -65,20 +65,11 @@ jobs:
             sha256sum ${name} > ./${name}.sha256sum
           done
 
-      - name: Download GeoLite2
-        env:
-          LICENSE_KEY: ${{ secrets.MAXMIND_GEOLITE2_LICENSE }}
-        run: |
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=${LICENSE_KEY}&suffix=tar.gz" -o GeoLite2-ASN.tar.gz
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN-CSV&license_key=${LICENSE_KEY}&suffix=zip" -o GeoLite2-ASN-CSV.zip
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${LICENSE_KEY}&suffix=tar.gz" -o GeoLite2-Country.tar.gz
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=${LICENSE_KEY}&suffix=zip" -o GeoLite2-Country-CSV.zip
-
       - name: Move files to publish directory
         run: |
           mkdir -p publish
-          mv ./output/maxmind/*.mmdb ./output/maxmind/*.sha256sum *.gz *.zip ./publish/
-          cp -fpPR ./output/text ./publish
+          mv ./output/maxmind/*.mmdb ./output/maxmind/*.sha256sum ./publish/
+
 
       - name: Git push assets to "release" branch
         run: |
@@ -98,9 +89,6 @@ jobs:
           for file in $(ls); do
             curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/${file}"
           done
-
-      - name: Remove some files to avoid publishing to GitHub release
-        run: rm -rf ./publish/*.{gz,zip} ./publish/text
 
       - name: Upload files to GitHub release
         uses: svenstaro/upload-release-action@v2
