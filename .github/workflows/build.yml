@@ -58,13 +58,6 @@ jobs:
         run: |
           go run ./
 
-      - name: Generate sha256 checksum for dat files
-        run: |
-          cd ./output/dat || exit 1
-          for name in $(ls *.dat); do
-            sha256sum ${name} > ./${name}.sha256sum
-          done
-
       - name: Generate sha256 checksum for mmdb files
         run: |
           cd ./output/maxmind || exit 1
@@ -91,8 +84,8 @@ jobs:
         run: |
           cd publish || exit 1
           git init
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "mcha0"
+          git config --local user.email "git-bot@mochaa.ws"
           git checkout -b release
           git add -A
           git commit -m "${{ env.RELEASE_NAME }}"
