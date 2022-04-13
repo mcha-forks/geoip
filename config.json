@@ -55,6 +55,22 @@
           "telegram"
         ]
       }
+    },
+    {
+      "type": "maxmindMMDB",
+      "action": "output",
+      "args": {
+        "outputName": "Country-no-game.mmdb",
+        "wantedList": [
+          "cn",
+          "private",
+          "cloudflare",
+          "cloudfront",
+          "fastly",
+          "google",
+          "telegram"
+        ]
+      }
     }
   ]
 }
