@@ -40,63 +40,20 @@
   ],
   "output": [
     {
-      "type": "v2rayGeoIPDat",
+      "type": "maxmindMMDB",
       "action": "output",
       "args": {
-        "outputName": "geoip.dat"
-      }
-    },
-    {
-      "type": "v2rayGeoIPDat",
-      "action": "output",
-      "args": {
-        "outputName": "geoip-only-cn-private.dat",
-        "wantedList": ["cn", "private"]
-      }
-    },
-    {
-      "type": "v2rayGeoIPDat",
-      "action": "output",
-      "args": {
-        "outputName": "geoip-asn.dat",
+        "outputName": "Country.mmdb",
         "wantedList": [
+          "cn",
+          "private",
           "cloudflare",
           "cloudfront",
-          "facebook",
           "fastly",
           "google",
-          "netflix",
-          "telegram",
-          "twitter"
+          "telegram"
         ]
       }
-    },
-    {
-      "type": "v2rayGeoIPDat",
-      "action": "output",
-      "args": {
-        "oneFilePerList": true,
-        "wantedList": ["cn", "private"]
-      }
-    },
-    {
-      "type": "maxmindMMDB",
-      "action": "output",
-      "args": {
-        "outputName": "Country.mmdb"
-      }
-    },
-    {
-      "type": "maxmindMMDB",
-      "action": "output",
-      "args": {
-        "outputName": "Country-only-cn-private.mmdb",
-        "wantedList": ["cn", "private"]
-      }
-    },
-    {
-      "type": "text",
-      "action": "output"
     }
   ]
 }
