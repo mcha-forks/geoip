@@ -36,16 +36,9 @@ jobs:
       - name: Fetch external data
         run: ./external.sh
 
-      - name: Get GeoLite2
-        run: |
-          curl -L "https://github.com/Loyalsoldier/geoip/raw/release/GeoLite2-Country-CSV.zip" -o GeoLite2-Country-CSV.zip
-          unzip GeoLite2-Country-CSV.zip
-          rm -f GeoLite2-Country-CSV.zip
-          mv GeoLite2* geolite2
-
       - name: Build Country.mmdb file
         run: |
-          go run ./
+          go run .
 
       - name: Generate sha256 checksum for mmdb files
         run: |
