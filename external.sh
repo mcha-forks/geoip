@@ -61,6 +61,6 @@ done <${input}
 
 rm -f data/game && touch data/game
 
-cat .tmp/game/*.txt | grep -v '#' >> data/game
+cat .tmp/game/*.txt | grep -v '#' | go run ./merge >> data/game
 
 echo "[game] $(wc -l data/game | cut -d' ' -f1) records out"
