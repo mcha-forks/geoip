@@ -54,6 +54,14 @@
           "telegram"
         ]
       }
+    },
+    {
+      "type": "text",
+      "action": "output"
+    },
+    {
+      "type": "clashRuleSet",
+      "action": "output"
     }
   ]
 }
