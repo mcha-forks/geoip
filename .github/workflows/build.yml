@@ -36,7 +36,7 @@ jobs:
       - name: Fetch external data
         run: ./external.sh
 
-      - name: Build Country.mmdb file
+      - name: Build
         run: |
           go run .
 
@@ -50,7 +50,7 @@ jobs:
       - name: Move files to publish directory
         run: |
           mkdir -p publish
-          mv ./output/maxmind/*.mmdb ./output/maxmind/*.sha256sum ./publish/
+          mv ./output/maxmind/*.mmdb ./output/maxmind/*.sha256sum ./output/clash/ipcidr/*.txt ./output/text ./publish/
 
 
       - name: Git push assets to "release" branch
