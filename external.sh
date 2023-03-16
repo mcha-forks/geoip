@@ -1,66 +1,106 @@
 #!/usr/bin/env bash
+set -euo pipefail
+shopt -s inherit_errexit
 
-rm -rf .tmp
-mkdir -p .tmp data
+# [ HELPERS
+# cursor_rewind - Move cursor up and clear line
+cursor_rewind() {
+	printf '\033[F\033[2K' >&2
+}
 
-input="asn.csv"
+# furl - Fetch URL, wraps around cURL
+furl() {
+	curl -L --fail --progress-bar "${@}"
+	cursor_rewind
+}
 
-while IFS= read -r line; do
-  filename=$(echo ${line} | awk -F ',' '{print $1}')
-  IFS='|' read -r -a asns <<<$(echo ${line} | awk -F ',' '{print $2}')
-  file="data/${filename}"
+###### msg formatting excerpted from libmakepkg #####
+# SPDX-License-Identifier: GPL-2.0-or-later
+ALL_OFF="\e[0m"
+BOLD="\e[1m"
+BLUE="${BOLD}\e[34m"
+GREEN="${BOLD}\e[32m"
+RED="${BOLD}\e[31m"
 
-  rm -f ${file} && touch ${file}
-  i=1
-  for asn in ${asns[@]}; do
-    echo "[asn] (${i}/${#asns[@]}) pulling ${filename} (${asn})"
-    url="https://stat.ripe.net/data/ris-prefixes/data.json?list_prefixes=true&types=o&resource=${asn}"
-    curl -L --progress-bar ${url} -o .tmp/${filename}-${asn}.txt \
-      -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
-    jq --raw-output '.data.prefixes.v4.originating[]' .tmp/${filename}-${asn}.txt | sort -u >>${file}
-    jq --raw-output '.data.prefixes.v6.originating[]' .tmp/${filename}-${asn}.txt | sort -u >>${file}
-    printf '\033[F\033[2K\033[F\033[2K'
-    i=$((i+1))
-  done
-  echo "[asn] ${filename} $(wc -l ${file} | cut -d' ' -f1) records out"
-done <${input}
+msg() {
+	local mesg=$1
+	shift
+	printf "${GREEN}==>${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@"
+}
 
-echo "[asn] appending extra data"
-curl -L --progress-bar https://www.cloudflare.com/ips-v4 | grep "/" >> data/cloudflare
-curl -L --progress-bar https://www.cloudflare.com/ips-v6 | grep "/" >> data/cloudflare
-curl -L --progress-bar https://api.fastly.com/public-ip-list | jq --raw-output '.addresses[],.ipv6_addresses[]' >> data/fastly
-curl -L --progress-bar https://ip-ranges.amazonaws.com/ip-ranges.json | jq --raw-output '.prefixes[],.ipv6_prefixes[] | select(.service == "CLOUDFRONT") | .ip_prefix,.ipv6_prefix' | grep "/" >> data/cloudfront
+msg2() {
+	local mesg=$1
+	shift
+	printf "${BLUE}  ->${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@"
+}
 
-echo "[game] retrieving rules from netch repository"
+error() {
+	local mesg=$1
+	shift
+	printf "${RED}==> ERROR:${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+	cleanup
+	exit 1
+}
 
-svn co -q https://github.com/netchx/netch/trunk/Storage/mode/TUNTAP/ .tmp/game
-rm -rf .tmp/game/.svn
+##### end #####
+# ] END HELPERS
 
-printf '\033[F\033[2K'
+# [ INIT
+msg "Preparing..."
+if [[ -d "data" && -w "data" ]]; then
+	msg2 "Cleaning up old data..."
+	rm -rv "data"
+fi || error "Failed to clean up old data"
 
-echo "[game] retrieved $(ls -1 .tmp/game/*.txt | wc -l | cut -d' ' -f1) rules"
+mkdir -p "data"
+# ] END INIT
+fetch_data() {
+	# [ ASN
+	msg "[asn] retrieving IP blocks from RIPE"
+	local line
+	while read -r line; do
+		local filename
+		local file
+		filename=$(echo "${line}" | cut -d',' -f1)
+		IFS='|' read -r -a asns <<<"$(echo "${line}" | cut -d',' -f2)"
+		file=data/${filename}
 
-file="data/game"
-rm -f ${file} && touch ${file}
+		for asn in "${asns[@]}"; do
+			msg2 "fetching ${asn}"
+			furl "https://stat.ripe.net/data/ris-prefixes/data.json?list_prefixes=true&types=o&resource=${asn}" |
+				jq --raw-output '.data.prefixes | .v4, .v6 | .originating[]' |
+				sort -u >>"${file}"
+			cursor_rewind
+		done
+		msg2 "${filename}: $(wc -l "${file}" | cut -d' ' -f1) records out"
+	done <"asn.csv"
+	unset line
 
-input="game-ignore.txt"
+	msg "[asn] appending extra data"
+	furl "https://www.cloudflare.com/ips-v4" "https://www.cloudflare.com/ips-v6" |
+		grep "/" >>"data/cloudflare"
+	furl "https://api.fastly.com/public-ip-list" |
+		jq --raw-output '.addresses[],.ipv6_addresses[]' >>"data/fastly"
+	furl "https://ip-ranges.amazonaws.com/ip-ranges.json" |
+		jq --raw-output '.prefixes[],.ipv6_prefixes[] | select(.service == "CLOUDFRONT") | .ip_prefix,.ipv6_prefix' |
+		grep "/" >>"data/cloudfront"
+	# ] END ASN
 
-while read -r line; do
-  echo "[game] ignoring ${line}"
-  rm ".tmp/game/${line}"
-done <${input}
+	msg "[game] retrieving rules from netch repository"
 
-input="game-pick.txt"
+	local game
+	game="$(
+		furl "https://github.com/netchx/netch/archive/refs/heads/main.tar.gz" |
+			tar xOzf - 'netch-main/Storage/mode/TUNTAP/*.txt' -X "game-ignore.txt" |
+			sed 's/#.*$//;/^$/d'
+	)"
 
-while read -r line; do
-  echo "[game] picking ${line}"
-  curl -L --progress-bar "${line}" \
-    -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' >> .tmp/game/pick.txt
-  printf '\033[F\033[2K'
-done <${input}
+	read -r -a game_pick <"game-pick.txt"
+	msg2 "picking ${#game_pick[@]} extra rule(s)"
+	game+="$(furl "${game_pick[@]}" | sed 's/#.*$//')"
 
-rm -f data/game && touch data/game
+	go run ./merge <<<"${game}" >"data/game"
+	msg2 "$(wc -l data/game | cut -d' ' -f1) records out"
+}
 
-cat .tmp/game/*.txt | grep -v '#' | go run ./merge >> data/game
-
-echo "[game] $(wc -l data/game | cut -d' ' -f1) records out"
+fetch_data
