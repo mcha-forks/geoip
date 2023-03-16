@@ -77,8 +77,11 @@ fetch_data() {
 	unset line
 
 	msg "[asn] appending extra data"
-	furl "https://www.cloudflare.com/ips-v4" "https://www.cloudflare.com/ips-v6" |
-		grep "/" >>"data/cloudflare"
+	(
+		furl "https://www.cloudflare.com/ips-v4"
+		echo
+		furl "https://www.cloudflare.com/ips-v6"
+	) | grep "/" >>"data/cloudflare"
 	furl "https://api.fastly.com/public-ip-list" |
 		jq --raw-output '.addresses[],.ipv6_addresses[]' >>"data/fastly"
 	furl "https://ip-ranges.amazonaws.com/ip-ranges.json" |
