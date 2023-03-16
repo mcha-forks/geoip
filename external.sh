@@ -91,7 +91,7 @@ fetch_data() {
 	local game
 	game="$(
 		furl "https://github.com/netchx/netch/archive/refs/heads/main.tar.gz" |
-			tar xOzf - 'netch-main/Storage/mode/TUNTAP/*.txt' -X "game-ignore.txt" |
+			tar --wildcards -xOzf - 'netch-main/Storage/mode/TUNTAP/*.txt' -X "game-ignore.txt" |
 			sed 's/#.*$//;/^$/d'
 	)"
 
