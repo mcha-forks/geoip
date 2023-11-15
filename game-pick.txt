@@ -16,3 +16,4 @@ https://raw.githubusercontent.com/FQrabbit/SSTap-Rule/master/rules/Tom-clancy's-
 https://raw.githubusercontent.com/FQrabbit/SSTap-Rule/master/rules/Unturned.rules
 https://raw.githubusercontent.com/FQrabbit/SSTap-Rule/master/rules/Watch-Dogs.rules
 https://raw.githubusercontent.com/FQrabbit/SSTap-Rule/master/rules/Watch-Dogs2.rules
+https://raw.githubusercontent.com/FQrabbit/SSTap-Rule/master/rules/Fall-Guys.rules
